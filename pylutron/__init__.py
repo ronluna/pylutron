@@ -241,12 +241,12 @@ class LutronXmlDbParser(object):
     relevant Lutron objects and stuffs them into the appropriate hierarchy."""
     import xml.etree.ElementTree as ET
 
-    def visit_area(area_to_visit, location=None):
-      for areas_xml in area_to_visit.findall('Areas'):
-        for area_xml in areas_xml.findall('Area'):
-          area = self._parse_area(area_xml, location)
-          self.areas.append(area)
-          visit_area(area_xml, area.name)
+    #def visit_area(area_to_visit, location=None):
+    #  for areas_xml in area_to_visit.findall('Areas'):
+    #    for area_xml in areas_xml.findall('Area'):
+    #      area = self._parse_area(area_xml, location)
+    #      self.areas.append(area)
+    #      visit_area(area_xml, area.name)
 
 
     root = ET.fromstring(self._xml_db_str)
@@ -282,19 +282,19 @@ class LutronXmlDbParser(object):
     top_area = root.find('Areas').find('Area')
     self.project_name = top_area.get('Name')
 
-    #areas = top_area.find('Areas')
-    #for area_xml in areas.iter('Area'):
-    #  area = self._parse_area(area_xml)
-    #  self.areas.append(area)
-    visit_area(top_area)
+    areas = top_area.find('Areas')
+    for area_xml in areas.iter('Area'):
+      area = self._parse_area(area_xml)
+      self.areas.append(area)
+    #visit_area(top_area)
     return True
 
-  #def _parse_area(self, area_xml):
-  def _parse_area(self, area_xml, location):
-     """Parses an Area tag, which is effectively a room, depending on how the
+  def _parse_area(self, area_xml):
+  #def _parse_area(self, area_xml, location):
+    """Parses an Area tag, which is effectively a room, depending on how the
     Lutron controller programming was done."""
     #path = "" if (location is None) else location + " "
-    name = path + area_xml.get('Name')
+    #name = path + area_xml.get('Name')
     occupancy_group_id = area_xml.get('OccupancyGroupAssignedToID')
     occupancy_group = self._occupancy_groups.get(occupancy_group_id)
     area_name = area_xml.get('Name')
@@ -337,7 +337,7 @@ class LutronXmlDbParser(object):
             'HOMEOWNER_KEYPAD',
             'INTERNATIONAL_SEETOUCH_KEYPAD',
             'WCI',
-            'QS_IO_INTERFACE,
+            'QS_IO_INTERFACE',
             'GRAFIK_T_HYBRID_KEYPAD'):
 
           keypad = self._parse_keypad(device_xml, device_group)
@@ -346,8 +346,6 @@ class LutronXmlDbParser(object):
           motion_sensor = self._parse_motion_sensor(device_xml)
           area.add_sensor(motion_sensor)
         #elif device_xml.get('DeviceType') == 'VISOR_CONTROL_RECEIVER':
-        else:
-          #phantom keypad doesn't have a DeviceType
         else:
           #phantom keypad doesn't have a DeviceType
           keypad = self._parse_keypad(device_xml, device_group)
@@ -422,9 +420,8 @@ class LutronXmlDbParser(object):
                     name=name,
                     engraving=engraving,
                     num=component_number,
-                    num=int(component_xml.get('ComponentNumber')),
+                    #num=int(component_xml.get('ComponentNumber')),
                     button_type=button_type,
-                    direction=direction,
                     direction=direction,
                     led_logic=led_logic,
                     uuid=button_xml.get('UUID'))
@@ -444,7 +441,7 @@ class LutronXmlDbParser(object):
                     button_type=cci_type,
                     direction=None,
                     led_logic=led_logic,
-                    uuid=button_xml.get('UUID'))
+                    uuid=cci_xml.get('UUID'))
     return button
 
 
@@ -1467,6 +1464,8 @@ class Area(object):
     self.add_occupancy_group()
 
   def add_occupancy_group(self):
+    if not self._occupancy_group:
+      self._occupancy_group = OccupancyGroup(self._lutron, self)
 
   @property
   def name(self):
