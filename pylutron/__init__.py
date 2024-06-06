@@ -718,7 +718,7 @@ class LutronEntity(object):
     for handler, context in self._subscribers:
       handler(self, context, event, params)
 
-  def subscribe(self, handler: LutronEventHandler, context):
+  def subscribe(self, handler: LutronEventHandler, context) -> Callable[[], None]:
     """Subscribes to events from this entity.
 
     handler: A callable object that takes the following arguments (in order)
@@ -728,8 +728,10 @@ class LutronEntity(object):
              params: a dict of event-specific parameters
 
     context: User-supplied, opaque object that will be passed to handler.
+    Returns: A callable that can be used to unsubscribe from the event.
     """
     self._subscribers.append((handler, context))
+    return lambda: self._subscribers.remove((handler, context))
 
   def handle_update(self, args):
     """The handle_update callback is invoked when an event is received
@@ -1373,11 +1375,12 @@ class OccupancyGroup(LutronEntity):
   def _bind_area(self, area):
     self._area = area
     self._integration_id = area.id
-    self._lutron.register_id(OccupancyGroup._CMD_TYPE, self)
+    if self._integration_id != 0:
+      self._lutron.register_id(OccupancyGroup._CMD_TYPE, self)
 
   @property
   def id(self):
-    """The integration id"""
+    """The integration id, which is the area's integration_id"""
     return self._integration_id
 
   @property
